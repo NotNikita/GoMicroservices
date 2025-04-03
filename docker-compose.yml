@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  broker-service:
+    build: ./broker-service/
+    ports:
+      - "8080:8080"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  frontend:
+    build: ./frontend/
+    ports:
+      - "3000:3000"
