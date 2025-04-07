@@ -1,4 +1,5 @@
-version: "3.8"
+volumes:
+  postgres_data:
 
 services:
   broker-service:
@@ -10,7 +11,51 @@ services:
       mode: replicated
       replicas: 1
 
+  auth-service:
+    build: ./auth-service/
+    ports:
+      - "9090:9090"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_DB_URL: "postgres://postgres:password@postgres:5432/postgres?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+
   frontend:
     build: ./frontend/
     ports:
       - "3000:3000"
+
+  postgres:
+    image: postgres:17.2
+    container_name: postgres
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "password"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          cpus: "3"
+          memory: 10G

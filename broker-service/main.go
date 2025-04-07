@@ -12,12 +12,9 @@ const (
 )
 
 func main() {
+	log.Println("Broker service started")
 	app := fiber.New()
 	api.Routes(app)
-
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, World!")
-	})
 
 	app.Get("/ping", api.HealthCheck)
 	app.Post("/", api.Broker)

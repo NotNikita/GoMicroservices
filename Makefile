@@ -1,6 +1,7 @@
 SHELL=cmd.exe
 FRONT_END_BINARY=frontApp.exe
 BROKER_BINARY=brokerApp
+AUTH_BINARY=authApp
 
 ## up: starts all containers in the background without forcing build
 up:
@@ -21,6 +22,11 @@ down:
 	@echo Stopping docker compose...
 	docker-compose down
 	@echo Done!
+
+## clear_postgres_data: remove all data and tables!
+clear_postgres_data:
+	@echo Clearing postgres volume
+	docker volume rm gomicroservices_postgres_data
 
 ## start: starts the front end
 start: build_front
