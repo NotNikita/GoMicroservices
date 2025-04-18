@@ -44,15 +44,15 @@ func (uh *UserHandler) Login(c *fiber.Ctx) error {
 
 	result, err := uh.service.PasswordMatches(user, userPayload.Password)
 	if err != nil || !result {
-		log.Printf("post.Login password hash didnt match for: %s\n", userPayload.Email)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		log.Printf("post.Login password hash didnt match for: %s %v %v", userPayload.Email, err, result)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Email of password is incorrect",
 		})
 	}
 
 	return c.Status(200).JSON(fiber.Map{
-		"Error":   false,
-		"Message": fmt.Sprintf("Logged in user %s", userPayload.Email),
-		"Data":    user,
+		"error":   false,
+		"message": fmt.Sprintf("Logged in user %s", userPayload.Email),
+		"data":    user,
 	})
 }

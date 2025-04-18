@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	resty "resty.dev/v3"
 )
 
 const (
@@ -13,11 +14,15 @@ const (
 
 func main() {
 	log.Println("Broker service started")
+	restyClient := resty.New()
+	defer restyClient.Close()
+	broker := api.NewBrokerHandler(restyClient)
 	app := fiber.New()
 	api.Routes(app)
 
-	app.Get("/ping", api.HealthCheck)
-	app.Post("/", api.Broker)
+	app.Get("/ping", broker.HealthCheck)
+	app.Post("/", broker.HitBroker)
+	app.Post("/handle", broker.HandleSubmission)
 
 	log.Fatal(app.Listen(webPort))
 }

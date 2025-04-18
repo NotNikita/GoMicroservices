@@ -37,7 +37,7 @@ func (u *UserService) GetAll() ([]*model.User, error) {
 	defer cancel()
 
 	query := `select id, email, first_name, last_name, password, user_active, created_at, updated_at
-	from users order by last_name`
+	from udemy_users order by last_name`
 
 	rows, err := u.db.Query(ctx, query)
 	if err != nil {
@@ -75,7 +75,8 @@ func (u *UserService) GetByEmail(email string) (*model.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	query := `select id, email, first_name, last_name, password, user_active, created_at, updated_at from users where email = $1`
+	query := `select id, email, first_name, last_name, password, user_active, created_at, updated_at from udemy_users where email = $1`
+	log.Printf("Executing query: %s with email: %s", query, email)
 
 	var user model.User
 	row := u.db.QueryRow(ctx, query, email)
@@ -103,7 +104,7 @@ func (u *UserService) GetOne(id int) (*model.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	query := `select id, email, first_name, last_name, password, user_active, created_at, updated_at from users where id = $1`
+	query := `select id, email, first_name, last_name, password, user_active, created_at, updated_at from udemy_users where id = $1`
 
 	var user model.User
 	row := u.db.QueryRow(ctx, query, id)
@@ -132,7 +133,7 @@ func (u *UserService) Update(obj model.User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	stmt := `update users set
+	stmt := `update udemy_users set
 		email = $1,
 		first_name = $2,
 		last_name = $3,
@@ -162,7 +163,7 @@ func (u *UserService) Delete(idToDelete string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	stmt := `delete from users where id = $1`
+	stmt := `delete from udemy_users where id = $1`
 
 	_, err := u.db.Exec(ctx, stmt, idToDelete)
 	if err != nil {
@@ -177,7 +178,7 @@ func (u *UserService) DeleteByID(id int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	stmt := `delete from users where id = $1`
+	stmt := `delete from udemy_users where id = $1`
 
 	_, err := u.db.Exec(ctx, stmt, id)
 	if err != nil {
@@ -198,7 +199,7 @@ func (u *UserService) Insert(user model.User) (int, error) {
 	}
 
 	var newID int
-	stmt := `insert into users (email, first_name, last_name, password, user_active, created_at, updated_at)
+	stmt := `insert into udemy_users (email, first_name, last_name, password, user_active, created_at, updated_at)
 		values ($1, $2, $3, $4, $5, $6, $7) returning id`
 
 	row, err := u.db.Query(ctx, stmt,
@@ -230,7 +231,7 @@ func (u *UserService) ResetPassword(user *model.User, password string) error {
 		return err
 	}
 
-	stmt := `update users set password = $1 where id = $2`
+	stmt := `update udemy_users set password = $1 where id = $2`
 	_, err = u.db.Exec(ctx, stmt, hashedPassword, user.ID)
 	if err != nil {
 		return err
@@ -242,8 +243,8 @@ func (u *UserService) ResetPassword(user *model.User, password string) error {
 // PasswordMatches uses Go's bcrypt package to compare a user supplied password
 // with the hash we have stored for a given user in the database. If the password
 // and hash match, we return true; otherwise, we return false.
-func (u *UserService) PasswordMatches(user *model.User, pswdHash string) (bool, error) {
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(pswdHash))
+func (u *UserService) PasswordMatches(user *model.User, passwordToCheck string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(passwordToCheck))
 	if err != nil {
 		switch {
 		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
