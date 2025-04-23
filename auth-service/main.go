@@ -25,7 +25,7 @@ func main() {
 	}
 
 	dsn := os.Getenv(DB_URL)
-	fmt.Println("dsn is", dsn)
+	log.Println("dsn is", dsn)
 	pgPool, err := createDBPool(dsn)
 	if err != nil {
 		log.Fatalf("Failed connecting to DB %s", err)

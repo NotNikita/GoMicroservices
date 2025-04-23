@@ -1,5 +1,6 @@
 volumes:
   postgres_data:
+  mongo_data:
 
 services:
   broker-service:
@@ -26,6 +27,21 @@ services:
         condition: service_healthy
         restart: true
 
+  logger-service:
+    build: ./logger-service/
+    ports:
+      - "7070:7070"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      MONGO_URL: "mongodb://root:example@mongo:27017/udemy_logs?authSource=admin"
+    depends_on:
+      mongo:
+        condition: service_healthy
+        restart: true
+
   frontend:
     build: ./frontend/
     ports:
@@ -35,7 +51,7 @@ services:
     image: postgres:17.2
     container_name: postgres
     build:
-      context: ./database
+      context: ./database/postgres
       dockerfile: Dockerfile
     environment:
       POSTGRES_DB: "postgres"
@@ -52,6 +68,35 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          cpus: "3"
+          memory: 10G
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    build:
+      context: ./database/mongo
+      dockerfile: Dockerfile
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: udemy_logs
+    volumes:
+      - mongo_data:/data/db
+      - ./database/mongo/init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     deploy:
       mode: replicated
       replicas: 1
