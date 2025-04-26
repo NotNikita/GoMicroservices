@@ -51,7 +51,10 @@ func main(){
 
 	app.Get("/ping", logger.HealthCheck)
 	app.Post("/log", logger.CreateLog)
+	app.Put("/log", logger.UpdateLog)
 	app.Get("/logs", logger.GetAllLogs)
+	app.Get("/log/:id", logger.GetLogById)
+	app.Get("/logs/drop", logger.ClearLogs)
 
 	log.Fatal(app.Listen(port))
 }
