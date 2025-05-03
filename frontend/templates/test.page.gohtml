@@ -13,6 +13,30 @@
                 <a id="authBtn" class="btn btn-outline-secondary" href="#">
                     Test Auth
                 </a>
+                <a id="mailBtn" class="btn btn-outline-secondary" href="#">
+                    Test Mail
+                </a>
+                <span class="dropdown" style="position: relative; display: inline-block;">
+                    <button id="menuBtn" class="btn btn-outline-secondary dropdown-toggle" type="button">
+                        Test Logger
+                    </button>
+                    <ul id="menuPopover" class="dropdown-menu" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 0.125rem; z-index: 1000;">
+                        <li><button class="btn btn-link dropdown-item" id="logger-create">Create a log</button></li>
+                        <li><button class="btn btn-link dropdown-item" id="logger-update">Update the log</button></li>
+                        <li><button class="btn btn-link dropdown-item" id="logger-get-all">Get all logs</button></li>
+                        <li><button class="btn btn-link dropdown-item" id="logger-get-one">Get log by id</button></li>
+                        <li><button class="btn btn-link dropdown-item" id="logger-clear-all">Clear saved logs</button></li>
+                    </ul>
+                </span>
+
+                <script>
+                    const menuBtn = document.getElementById("menuBtn");
+                    const menuPopover = document.getElementById("menuPopover");
+
+                    menuBtn.addEventListener("click", () => {
+                        menuPopover.style.display = menuPopover.style.display === "none" ? "block" : "none";
+                    });
+                </script>
 
                 <div id="output" class="mt-5" style="outline: 1px solid silver; padding: 2em;">
                     <span class="text-muted">Output shows here...</span>
@@ -20,13 +44,13 @@
             </div>
         </div>
         <div class="row">
-            <div class="col">
+            <div class="col-6">
                 <h4 class="mt-5">Sent</h4>
                 <div class="mt-1" style="outline: 1px solid silver; padding: 2em;">
                     <pre id="payload"><span class="text-muted">Nothing sent yet...</span></pre>
                 </div>
             </div>
-            <div class="col">
+            <div class="col-6">
                 <h4 class="mt-5">Received</h4>
                 <div class="mt-1" style="outline: 1px solid silver; padding: 2em;">
                     <pre id="received"><span class="text-muted">Nothing received yet...</span></pre>
@@ -38,15 +62,20 @@
 
 {{define "js"}}
     <script>
-        const brokerBtn = document.getElementById("brokerBtn");
-        const authBtn = document.getElementById("authBtn");
+        // Common elements
         const output = document.getElementById("output");
         const sent = document.getElementById("payload");
         const received = document.getElementById("received");
+        // BROKER AND AUTH METHODS
+        const brokerBtn = document.getElementById("brokerBtn");
+        const authBtn = document.getElementById("authBtn");
+
+        const BROKER_URL = "http://localhost:8080/"
+
 
         brokerBtn.addEventListener("click", async (e) => {
             try {
-                const response = await fetch("http://localhost:8080/", {
+                const response = await fetch(BROKER_URL, {
                     method: "POST",
                 })
                 const data = await response.json();
@@ -80,7 +109,7 @@
                     }
                 }
 
-                const response = await fetch("http://localhost:8080/handle", {
+                const response = await fetch(`${BROKER_URL}handle`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -98,6 +127,131 @@
                     output.innerHTML += `<br><strong>Response:</strong> ${data.message}`;
                 }
 
+            } catch (error) {
+                console.error("Error occured", error);
+                output.innerHTML += `<br><strong>Error occured:</strong> ${error}`;
+            }
+        })
+    </script>
+    <script>
+        // LOGGER METHODS
+        const createBtn = document.getElementById("logger-create");
+        const updateBtn = document.getElementById("logger-update");
+        const getAllBtn = document.getElementById("logger-get-all");
+        const getOneBtn = document.getElementById("logger-get-one");
+        const clearAllBtn = document.getElementById("logger-clear-all");
+        // TODO: Replace with broker url and change payloads
+        const LOGGER_URL = "http://localhost:7070"
+
+        createBtn.addEventListener("click", async (e) => {
+            try {
+                const payload = {
+                    action: "log",
+                    log: {
+                        name: "new log event",
+                        data: "Something happened somewhere, so we log"
+                    }
+                }
+
+                const response = await fetch(`${LOGGER_URL}/log`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                })
+                const data = await response.json();
+                
+                sent.innerHTML = `<span>${JSON.stringify(payload, undefined, 4)}</span>`;
+                received.innerHTML = JSON.stringify(data, undefined, 4);
+                output.innerHTML += `<br><strong>Response:</strong> ${data.message}`;
+            } catch (error) {
+                console.error("Error occured", error);
+                output.innerHTML += `<br><strong>Error occured:</strong> ${error}`;
+            }
+        })
+
+        updateBtn.addEventListener("click", async (e) => {
+            try {
+                const payload = {
+                    action: "log",
+                    log: {
+                        id: "680d0f56312b41527f437826",
+                        name: "new log event",
+                        data: "Something happened somewhere, so we log",
+                        created_at: "2025-04-26T16:52:38.633Z"
+                    }
+                }
+
+                const response = await fetch(`${LOGGER_URL}/log`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                })
+                const data = await response.json();
+                
+                sent.innerHTML = `<span>${JSON.stringify(payload, undefined, 4)}</span>`;
+                received.innerHTML = JSON.stringify(data, undefined, 4);
+                output.innerHTML += `<br><strong>Response:</strong> ${data.message}`;
+            } catch (error) {
+                console.error("Error occured", error);
+                output.innerHTML += `<br><strong>Error occured:</strong> ${error}`;
+            }
+        })
+
+        getAllBtn.addEventListener("click", async (e) => {
+            try {
+                const response = await fetch(`${LOGGER_URL}/logs`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+                const data = await response.json();
+                
+                sent.innerHTML = `<span></span>`;
+                received.innerHTML = JSON.stringify(data, undefined, 4);
+                output.innerHTML += `<br><strong>Response:</strong> ${data.message}`;
+            } catch (error) {
+                console.error("Error occured", error);
+                output.innerHTML += `<br><strong>Error occured:</strong> ${error}`;
+            }
+        })
+
+        getOneBtn.addEventListener("click", async (e) => {
+            try {
+                const response = await fetch(`${LOGGER_URL}/log/123`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+                const data = await response.json();
+                
+                sent.innerHTML = `<span>fetch ${LOGGER_URL}/log/123</span>`;
+                received.innerHTML = JSON.stringify(data, undefined, 4);
+                output.innerHTML += `<br><strong>Response:</strong> ${data.message}`;
+            } catch (error) {
+                console.error("Error occured", error);
+                output.innerHTML += `<br><strong>Error occured:</strong> ${error}`;
+            }
+        })
+
+        clearAllBtn.addEventListener("click", async (e) => {
+            try {
+                const response = await fetch(`${LOGGER_URL}/logs/drop`, {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+                const data = await response.json();
+                
+                sent.innerHTML = `<span></span>`;
+                received.innerHTML = JSON.stringify(data, undefined, 4);
+                output.innerHTML += `<br><strong>Response:</strong> ${data.message}`;
             } catch (error) {
                 console.error("Error occured", error);
                 output.innerHTML += `<br><strong>Error occured:</strong> ${error}`;

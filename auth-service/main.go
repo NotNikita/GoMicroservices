@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	resty "resty.dev/v3"
 )
 
 const (
@@ -29,7 +30,6 @@ func main() {
 	pgPool, err := createDBPool(dsn)
 	if err != nil {
 		log.Fatalf("Failed connecting to DB %s", err)
-
 	}
 
 	// Init auth service
@@ -38,8 +38,12 @@ func main() {
 		log.Fatalf("Failed creating auth user service %s", err)
 	}
 
+	// Init resty client
+	restyClient := resty.New()
+	defer restyClient.Close()
+
 	// init controller
-	userController := api.NewUserHandler(userService)
+	userController := api.NewUserHandler(userService, restyClient)
 
 	log.Println("Auth service started")
 	app := fiber.New()

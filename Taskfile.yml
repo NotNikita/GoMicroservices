@@ -1,0 +1,11 @@
+version: "3"
+
+vars:
+  DOCKER_COMPOSE: docker-compose
+
+tasks:
+  rs:
+    desc: Restarts all services
+    cmds:
+      - "{{.DOCKER_COMPOSE}} down"
+      - "{{.DOCKER_COMPOSE}} up -d"

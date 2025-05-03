@@ -7,15 +7,22 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	resty "resty.dev/v3"
+)
+
+const (
+	logServiceUrl = "http://logger-service:7070/log"
 )
 
 type UserHandler struct {
 	service *service.UserService
+	restyClient *resty.Client
 }
 
-func NewUserHandler(service *service.UserService) *UserHandler {
+func NewUserHandler(service *service.UserService, restyClient *resty.Client) *UserHandler {
 	return &UserHandler{
 		service: service,
+		restyClient: restyClient,
 	}
 }
 
@@ -49,10 +56,52 @@ func (uh *UserHandler) Login(c *fiber.Ctx) error {
 			"error": "Email of password is incorrect",
 		})
 	}
+	
+	err = uh.logRequest("authentication", fmt.Sprintf("User %s logged in", userPayload.Email))
+	if err != nil {
+		log.Printf("post.Login failed to log successfull auth call: %v", err)
+	}
 
 	return c.Status(200).JSON(fiber.Map{
 		"error":   false,
 		"message": fmt.Sprintf("Logged in user %s", userPayload.Email),
 		"data":    user,
 	})
+}
+
+func (uh *UserHandler) logRequest(name, data string) error {
+    payload := struct {
+        Name string `json:"name"`
+        Data string `json:"data"`
+    }{
+        Name: name,
+        Data: data,
+    }
+
+    type LogResponse struct {
+        Error   bool   `json:"error"`
+        Message string `json:"message"`
+    }
+    
+
+    resp, err := uh.restyClient.R().
+        SetBody(payload).
+        SetHeader("Content-Type", "application/json").
+        SetResult(&LogResponse{}).
+        Post(logServiceUrl)
+        
+    if err != nil {
+        log.Printf("Error calling logger service: %v", err)
+        return err
+    }
+
+    log.Printf("Logger response status: %d", resp.StatusCode())
+    
+    if resp.StatusCode() != fiber.StatusOK {
+        result := resp.Result().(*LogResponse)
+        log.Printf("Logger service error: %s", result.Message)
+        return fmt.Errorf("failed to log request: %s", result.Message)
+    }
+
+    return nil
 }

@@ -47,14 +47,7 @@ func main(){
 	
 	logger := api.NewLoggerHandler(logService)
 	app := fiber.New()
-	api.Routes(app)
-
-	app.Get("/ping", logger.HealthCheck)
-	app.Post("/log", logger.CreateLog)
-	app.Put("/log", logger.UpdateLog)
-	app.Get("/logs", logger.GetAllLogs)
-	app.Get("/log/:id", logger.GetLogById)
-	app.Get("/logs/drop", logger.ClearLogs)
+	api.Routes(app, logger)
 
 	log.Fatal(app.Listen(port))
 }

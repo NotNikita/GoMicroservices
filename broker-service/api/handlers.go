@@ -28,11 +28,19 @@ type BrokerResponse struct {
 type RequestPayload struct {
 	Action string `json:"action"`
 	Auth AuthPayload `json:"auth,omitempty"`
+	Log LogPayload `json:"log,omitempty"`
+	Mail MailPayload `json:"mail,omitempty"`
 }
 
 type AuthPayload struct {
 	Email string `json:"email"`
 	Password string `json:"password"`
+}
+
+// TODO: make FE send this payload to Broker
+type LogPayload struct {
+	Name string `json:"name"`
+	Email string `json:"email"`
 }
 
 func (br *BrokerHandler) HealthCheck(c *fiber.Ctx) error {
@@ -61,7 +69,12 @@ func (br *BrokerHandler) HandleSubmission(c *fiber.Ctx) error {
 
 	switch requestPayload.Action {
 	case "auth":
-		return doAuth(c, br.restyClient, &requestPayload)
+		return makeAuthServiceCall(c, br.restyClient, &requestPayload)
+	case "log":
+		return c.Status(fiber.StatusOK).JSON(BrokerResponse{
+			Error:   true,
+			Message: "Log service not implemented yet",
+		});
 
 	default:
 		return c.Status(fiber.StatusBadRequest).JSON(BrokerResponse{
@@ -71,8 +84,8 @@ func (br *BrokerHandler) HandleSubmission(c *fiber.Ctx) error {
 	}
 }
 
-func doAuth(c *fiber.Ctx, client *resty.Client, p *RequestPayload) error {
-	// send to auth
+func makeAuthServiceCall(c *fiber.Ctx, client *resty.Client, p *RequestPayload) error {
+	// Send post request to auth service
 	resp, err := client.R().SetBody(p.Auth).SetResult(&BrokerResponse{}).Post("http://auth-service:9090/login")
 	if err != nil {
 		log.Printf("Error calling auth service: %v", err)

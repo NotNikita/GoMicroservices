@@ -36,7 +36,7 @@ func (lh *LoggerHandler) CreateLog(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(200).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"error":   false,
 		"message": "Log entry created successfully",
 		"data":    nil,

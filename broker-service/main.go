@@ -18,11 +18,7 @@ func main() {
 	defer restyClient.Close()
 	broker := api.NewBrokerHandler(restyClient)
 	app := fiber.New()
-	api.Routes(app)
-
-	app.Get("/ping", broker.HealthCheck)
-	app.Post("/", broker.HitBroker)
-	app.Post("/handle", broker.HandleSubmission)
+	api.Routes(app, broker)
 
 	log.Fatal(app.Listen(webPort))
 }
