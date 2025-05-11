@@ -16,7 +16,12 @@ func main() {
 	log.Println("Broker service started")
 	restyClient := resty.New()
 	defer restyClient.Close()
-	broker := api.NewBrokerHandler(restyClient)
+
+	    // Init RabbitMQ service with handler registry
+    mqService := api.NewRabbitMQService()
+    defer mqService.ShutDown()
+
+	broker := api.NewBrokerHandler(restyClient, mqService)
 	app := fiber.New()
 	api.Routes(app, broker)
 

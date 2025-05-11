@@ -9,3 +9,8 @@ tasks:
     cmds:
       - "{{.DOCKER_COMPOSE}} down"
       - "{{.DOCKER_COMPOSE}} up -d"
+
+  up:
+    desc: Starts all services
+    cmds:
+      - "{{.DOCKER_COMPOSE}} up -d"

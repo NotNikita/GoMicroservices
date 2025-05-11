@@ -8,12 +8,14 @@ import (
 )
 
 type BrokerHandler struct {
-	restyClient *resty.Client
+	restyClient *resty.Client;
+	mqService *RabbitMQService;
 }
 
-func NewBrokerHandler(client *resty.Client) *BrokerHandler {
+func NewBrokerHandler(client *resty.Client, mqService *RabbitMQService) *BrokerHandler {
 	return &BrokerHandler{
 		restyClient: client,
+		mqService: mqService,
 	}
 }
 
@@ -29,7 +31,6 @@ type RequestPayload struct {
 	Action string `json:"action"`
 	Auth AuthPayload `json:"auth,omitempty"`
 	Log LogPayload `json:"log,omitempty"`
-	Mail MailPayload `json:"mail,omitempty"`
 }
 
 type AuthPayload struct {
@@ -40,7 +41,7 @@ type AuthPayload struct {
 // TODO: make FE send this payload to Broker
 type LogPayload struct {
 	Name string `json:"name"`
-	Email string `json:"email"`
+	Data string `json:"data"`
 }
 
 func (br *BrokerHandler) HealthCheck(c *fiber.Ctx) error {
@@ -71,10 +72,7 @@ func (br *BrokerHandler) HandleSubmission(c *fiber.Ctx) error {
 	case "auth":
 		return makeAuthServiceCall(c, br.restyClient, &requestPayload)
 	case "log":
-		return c.Status(fiber.StatusOK).JSON(BrokerResponse{
-			Error:   true,
-			Message: "Log service not implemented yet",
-		});
+		return br.mqService.EmitRabbitMQMessage(c, &requestPayload)
 
 	default:
 		return c.Status(fiber.StatusBadRequest).JSON(BrokerResponse{
