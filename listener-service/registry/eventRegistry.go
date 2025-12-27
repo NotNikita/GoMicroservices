@@ -35,10 +35,10 @@ func (r *HandlerRegistry) GetHandler(eventType string) types.Handler {
 }
 
 // ProcessEvent processes an event payload using the appropriate handler
-func (r *HandlerRegistry) ProcessEvent(payload types.Payload) error {
-	handler := r.GetHandler(payload.Name)
+func (r *HandlerRegistry) ProcessEvent(routingKey string, payload types.Payload) error {
+	handler := r.GetHandler(routingKey)
 	if handler == nil {
-		return fmt.Errorf("no handler for event type: %s", payload.Name)
+		return fmt.Errorf("no handler for event type: %s, payload: %s", routingKey, payload)
 	}
 
 	return handler.Handle(payload)

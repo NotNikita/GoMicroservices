@@ -17,7 +17,7 @@ func main() {
 	restyClient := resty.New()
 	defer restyClient.Close()
 
-	    // Init RabbitMQ service with handler registry
+	// Init RabbitMQ service with handler registry
     mqService := api.NewRabbitMQService()
     defer mqService.ShutDown()
 

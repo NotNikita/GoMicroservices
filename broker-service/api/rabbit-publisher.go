@@ -10,7 +10,8 @@ import (
 
 const (
 	logServiceUrl = "http://logger-service:7070/log"
-	excahngeName = "events_exchange"
+	rabbitMqHost = "rabbitmq" // rabbitmq / localhost
+	exchangeName = "events_exchange"
 )
 
 type RabbitMQService struct {
@@ -20,7 +21,7 @@ type RabbitMQService struct {
 
 func NewRabbitMQService() *RabbitMQService {
     // Create a single connection
-    conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+    conn, err := amqp.Dial("amqp://guest:guest@" + rabbitMqHost + ":5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
     log.Println("Connected to RabbitMQ")
     
@@ -41,11 +42,14 @@ func (s *RabbitMQService) EmitRabbitMQMessage(c *fiber.Ctx, p *RequestPayload) e
 	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
 
+	err = ch.ExchangeDeclare(exchangeName, "topic", true, false, false, false, nil)
+	failOnError(err, "Failed to re-declare exchange")
+
 	jsonData, err := json.Marshal(p.Log)
 	failOnError(err, "Failed to marshal LogPayload")
 
 	log.Println("Channel opened. Pushing message to RabbitMQ")
-	err = ch.Publish(excahngeName, "log.INFO", false, false, amqp.Publishing{
+	err = ch.Publish(exchangeName, "log.INFO", false, false, amqp.Publishing{
 		ContentType: "application/json",
 		Body:        jsonData,
 	})
@@ -60,7 +64,7 @@ func (s *RabbitMQService) EmitRabbitMQMessage(c *fiber.Ctx, p *RequestPayload) e
 
 func failOnError(err error, msg string)error  {
 	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
+		log.Printf("%s: %s", msg, err)
 		return err
 	}
 	return nil

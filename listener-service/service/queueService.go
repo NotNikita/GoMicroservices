@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 const (
 	logServiceUrl = "http://logger-service:7070/log"
+	rabbitMqHost = "rabbitmq" // rabbitmq / localhost
 )
 
 type RabbitMQService struct {
@@ -26,7 +28,7 @@ type RabbitMQService struct {
 func NewRabbitMQService(registry *registry.HandlerRegistry) *RabbitMQService {
     // Create a single connection
     // TODO: rabbitmq for prod, localhost for dev
-    conn, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+    conn, err := amqp.Dial("amqp://guest:guest@" + rabbitMqHost + ":5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
     log.Println("Connected to RabbitMQ")
     
@@ -99,14 +101,17 @@ func (s *RabbitMQService) Listen(topics []string) error {
      Example: log.* will match log.info, log.error, etc.
      */
     for _, topic := range topics {
-        ch.QueueBind(
+        err := ch.QueueBind(
             q.Name,
-            topic, // Ключ маршрутизации
+            topic,  // Ключ маршрутизации
             "events_exchange", // exchange
             false,
             nil, // arguments
         )
-        log.Printf("Event with %s key will go to %s queue, when publishing to a %s exchange", topic, q.Name, "events_exchange")
+        if err != nil {
+            return fmt.Errorf("failed to bind queue: %w", err)
+        }
+        log.Printf("Event with %s key will go to %s queue", topic, q.Name)
     }
 
     messages, err := ch.Consume(
@@ -123,7 +128,8 @@ func (s *RabbitMQService) Listen(topics []string) error {
         wg.Add(1)
         defer wg.Done()
 
-        select {
+        for {
+            select {
             case <-ch.NotifyClose(make(chan *amqp.Error)):
                 log.Println("Channel closed")
                 wg.Done()
@@ -134,19 +140,20 @@ func (s *RabbitMQService) Listen(topics []string) error {
                 return
             case newMessage := <-messages:
                 // Process the message
-                log.Printf("Received a message: %s", newMessage.Body)
+                log.Printf("Received a message: %s, %s", newMessage.RoutingKey, newMessage.Body)
                 var payload types.Payload
                 err := json.Unmarshal(newMessage.Body, &payload)
                 failOnError(err, "Failed to unmarshal message")
 
                 // Use the registry to process the event
-                err = s.registry.ProcessEvent(payload); 
+                err = s.registry.ProcessEvent(newMessage.RoutingKey, payload); 
                 failOnError(err, "Failed to process event")
 
             // Add a default case to prevent blocking if no messages
             default:
                 // Sleep a tiny bit to prevent CPU spinning
                 time.Sleep(10 * time.Millisecond)
+        }
         }
     }()
 
@@ -168,6 +175,6 @@ func declareRandomQueue(ch *amqp.Channel) (amqp.Queue, error) {
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
+		log.Printf("%s: %s", msg, err)
 	}
 }

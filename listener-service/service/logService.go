@@ -13,7 +13,7 @@ type Handler interface {
 	Handle(payload types.Payload) error
 }
 
-const logServiceURL = "http://logger-service:7070/log"
+const logServiceURL = "http://logger-service:7070/log" // logger-service / localhost
 
 type EventService struct {
 	restyClient *resty.Client

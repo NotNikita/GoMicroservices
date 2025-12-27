@@ -24,7 +24,9 @@ func main(){
     
     // Register handlers
     logHandler := service.NewEventService(restyClient)
-    register.Register("log", logHandler)
+    register.Register("log.INFO", logHandler)
+    register.Register("log.ERROR", logHandler)
+    register.Register("log.WARNING", logHandler)
     
     // Init RabbitMQ service with handler registry
     mqService := service.NewRabbitMQService(register)
