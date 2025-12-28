@@ -46,6 +46,7 @@ services:
     build: ./logger-service/
     ports:
       - "7070:7070"
+      - "50001:50001"
     restart: always
     deploy:
       mode: replicated

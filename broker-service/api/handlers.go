@@ -1,10 +1,13 @@
 package api
 
 import (
+	"broker/logs"
 	"log"
 	"net/rpc"
 
 	"github.com/gofiber/fiber/v2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	resty "resty.dev/v3"
 )
 
@@ -75,6 +78,8 @@ func (br *BrokerHandler) HandleSubmission(c *fiber.Ctx) error {
 	case "log":
 		return logItemViaRPC(c, requestPayload.Log)
 		// return br.mqService.EmitRabbitMQMessage(c, &requestPayload)
+	case "log-grpc":
+		return logItemViaGRPC(c, requestPayload.Log)
 
 	default:
 		return c.Status(fiber.StatusBadRequest).JSON(BrokerResponse{
@@ -138,5 +143,33 @@ func logItemViaRPC(c *fiber.Ctx, l LogPayload) error {
 		Error: false,
 		Message: "logItemViaRPC happened",
 		Data: result,
+	})
+}
+
+func logItemViaGRPC(c *fiber.Ctx, l LogPayload) error {
+	client, err := grpc.NewClient("logger-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Printf("Error establishing grpc Dial: %v", err)
+	}
+	defer client.Close()
+
+	payload := logs.LogRequest{
+		Name: l.Name,
+		Data: l.Data,
+	}
+	logClient := logs.NewLogServiceClient(client)
+	res, err := logClient.LogInfo(c.Context(), &payload)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(BrokerResponse{
+			Error:   true,
+			Message: "Error calling gRPC Logger server",
+			Data: err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(BrokerResponse{
+		Error: false,
+		Message: "logItemViaGRPC happened",
+		Data: res,
 	})
 }

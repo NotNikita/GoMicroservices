@@ -56,7 +56,11 @@ func main() {
 
 	// Init gRPC Server
 	grpcServer := service.NewGRPCLogServer(logService)
-	go gRPCListen(grpcServer)
+	go func() {
+		if err := gRPCListen(grpcServer); err != nil {
+			log.Printf("gRPC server error: %v", err)
+		}
+	}()
 
 	logger := api.NewLoggerHandler(logService)
 	app := fiber.New()

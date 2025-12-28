@@ -10,6 +10,9 @@
                 <a id="publishBtn" class="btn btn-outline-secondary" href="#">
                     Test RabbitMQ
                 </a>
+                <a id="grpcBtn" class="btn btn-outline-secondary" href="#">
+                    Test gRPC
+                </a>
                 <a id="brokerBtn" class="btn btn-outline-secondary" href="#">
                     Test Broker
                 </a>
@@ -73,6 +76,7 @@
         const brokerBtn = document.getElementById("brokerBtn");
         const authBtn = document.getElementById("authBtn");
         const publishBtn = document.getElementById("publishBtn")
+        const grpcBtn = document.getElementById("grpcBtn")
 
         const BROKER_URL = "http://localhost:8080/"
 
@@ -144,6 +148,39 @@
                     log: {
                         name: "RabbitMQ test",
                         data: "Publishing a new message for broker->RabbitMQ->listener->log connection"
+                    }
+                }
+
+                const response = await fetch(`${BROKER_URL}handle`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(payload)
+                })
+                const data = await response.json();
+                
+                sent.innerHTML = `<span>${JSON.stringify(payload, undefined, 4)}</span>`;
+                received.innerHTML = JSON.stringify(data, undefined, 4);
+                if (data.error) {
+                    console.error(data.error);
+                } else {
+                    authCounterTillFailure--;
+                    output.innerHTML += `<br><strong>Response:</strong> ${data.message}`;
+                }
+            } catch (error) {
+                console.error("Error occured", error);
+                output.innerHTML += `<br><strong>Error occured:</strong> ${error}`;
+            }
+        })
+
+        grpcBtn.addEventListener("click", async (e) => {
+            try {
+                const payload = {
+                    action: "log-grpc",
+                    log: {
+                        name: "gRPC test",
+                        data: "Publishing a new message for broker->gRPC->listener->log connection"
                     }
                 }
 
