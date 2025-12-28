@@ -70,7 +70,7 @@ func (lh *LoggerHandler) GetAllLogs(c *fiber.Ctx) error {
 	var queryLimit int64
 
 	if limit := c.Query("limit"); limit != "" {
-		queryLimit  = int64(c.QueryInt(limit))
+		queryLimit = int64(c.QueryInt(limit))
 	}
 
 	logs, err := lh.ls.GetAll(queryLimit)

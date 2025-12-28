@@ -132,11 +132,9 @@ func (s *RabbitMQService) Listen(topics []string) error {
             select {
             case <-ch.NotifyClose(make(chan *amqp.Error)):
                 log.Println("Channel closed")
-                wg.Done()
                 return
             case <-ch.NotifyCancel(make(chan string)):
                 log.Println("Channel cancelled")
-                wg.Done()
                 return
             case newMessage := <-messages:
                 // Process the message

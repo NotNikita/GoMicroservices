@@ -12,32 +12,32 @@ import (
 
 type LoggerService struct {
 	mClient *mongo.Client
-	dbName string
+	dbName  string
 }
 
 func NewLoggerService(client *mongo.Client) (*LoggerService, error) {
 	return &LoggerService{
 		mClient: client,
-		dbName: "udemy_logs",
+		dbName:  "udemy_logs",
 	}, nil
 }
 
 // Log object that would be stored in the MongoDB
 type LogEntry struct {
-	ID bson.ObjectID `bson:"_id" json:"id"`
-	Name string `bson:"name" json:"name"`
-	Data string `bson:"data" json:"data"`
-	CreatedAt time.Time `bson:"created_at" json:"created_at"`
-	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
+	ID        bson.ObjectID `bson:"_id" json:"id"`
+	Name      string        `bson:"name" json:"name"`
+	Data      string        `bson:"data" json:"data"`
+	CreatedAt time.Time     `bson:"created_at" json:"created_at"`
+	UpdatedAt time.Time     `bson:"updated_at" json:"updated_at"`
 }
 
 func (ls *LoggerService) Insert(entry LogEntry) error {
 	collection := ls.mClient.Database(ls.dbName).Collection("logs")
 
 	_, err := collection.InsertOne(context.TODO(), LogEntry{
-		ID: bson.NewObjectID(),
-		Name: entry.Name,
-		Data: entry.Data,
+		ID:        bson.NewObjectID(),
+		Name:      entry.Name,
+		Data:      entry.Data,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	})
@@ -60,7 +60,7 @@ func (ls *LoggerService) GetAll(limit_opt ...int64) ([]*LogEntry, error) {
 
 	collection := ls.mClient.Database(ls.dbName).Collection("logs")
 
-	opts := options.Find().SetSort(bson.D{bson.E{Key: "created_at",Value: -1}}).SetLimit(limit)
+	opts := options.Find().SetSort(bson.D{bson.E{Key: "created_at", Value: -1}}).SetLimit(limit)
 
 	cursor, err := collection.Find(ctx, bson.D{}, opts)
 	if err != nil {
@@ -79,7 +79,7 @@ func (ls *LoggerService) GetAll(limit_opt ...int64) ([]*LogEntry, error) {
 		logs = append(logs, &entry)
 	}
 
-	return  logs, nil
+	return logs, nil
 }
 
 func (ls *LoggerService) GetOne(id string) (*LogEntry, error) {

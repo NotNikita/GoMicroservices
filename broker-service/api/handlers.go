@@ -2,6 +2,7 @@ package api
 
 import (
 	"log"
+	"net/rpc"
 
 	"github.com/gofiber/fiber/v2"
 	resty "resty.dev/v3"
@@ -72,7 +73,8 @@ func (br *BrokerHandler) HandleSubmission(c *fiber.Ctx) error {
 	case "auth":
 		return makeAuthServiceCall(c, br.restyClient, &requestPayload)
 	case "log":
-		return br.mqService.EmitRabbitMQMessage(c, &requestPayload)
+		return logItemViaRPC(c, requestPayload.Log)
+		// return br.mqService.EmitRabbitMQMessage(c, &requestPayload)
 
 	default:
 		return c.Status(fiber.StatusBadRequest).JSON(BrokerResponse{
@@ -106,4 +108,35 @@ func makeAuthServiceCall(c *fiber.Ctx, client *resty.Client, p *RequestPayload) 
 	}
 
 	return c.Status(fiber.StatusOK).JSON(resp.Result().(*BrokerResponse))
+}
+
+type RPCPayload struct {
+	Name string
+	Data string
+}
+
+func logItemViaRPC(c *fiber.Ctx, l LogPayload) error {
+	client, err := rpc.Dial("tcp", "logger-service:5001")
+	if err != nil {
+		log.Printf("Error establishing rpc Dial: %v", err)
+	}
+	payload := RPCPayload{
+		Name: l.Name,
+		Data: l.Data,
+	}
+	var result string
+	err = client.Call("RPCServer.LogInfo", payload, &result)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(BrokerResponse{
+			Error:   true,
+			Message: "Error calling rpc Logger server",
+			Data: err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(BrokerResponse{
+		Error: false,
+		Message: "logItemViaRPC happened",
+		Data: result,
+	})
 }
